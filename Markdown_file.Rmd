@@ -1,0 +1,533 @@
+---
+title: "New Sounds"
+author: "Florent Dueme"
+date: "27/09/2021"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(sjPlot)
+library(emmeans)
+library(xtable)
+library(rstatix)
+
+knitr::opts_chunk$set(echo = TRUE)
+
+# Turn off scientific notation
+options(scipen = 999)
+
+# Set language of errors as English
+Sys.setenv(LANG = "en")
+
+dataFolder = "C:/Users/Dell/Documents/Scripts/Jupyter_notebooks/Experiments/New Sounds/Table_data/"
+
+```
+
+
+
+
+## Participants
+
+
+Three groups of 25 native speakers of Spanish each learned two new vowels /y/ and /ɛ/ in three exposure sessions. All the participants were female and were not proficient in any language containing the target sounds. The Novel group learned the vowels paired with novel graphemes (<ф> and <ʚ>), while the Conflicting group learned the same sounds associated with the graphemes <u> and <e>, which also correspond to the Spanish vowels /u/ and /e/, respectively. The Auditory group learned the same vowels without any visual input in sessions 1-3.
+
+
+## Acoustic measurements
+
+For each vowel, the first three formants were extracted manually at vowel midpoint using the PRAAT speech analysis software (Boersma and Weenink, 2000). Only the results for the first two formants are reported in these results.
+
+
+## Analyses
+
+Data analyses for all experiments were conducted in R software (R Core Team, 2013) with RStudio (RStudio Team, 2016). Data were analyzed using linear-mixed models with the lmer package (Bates, Mächler, Bolker, Walker, 2015). All models were specified using the maximal random effect structure supported by the data, with random intercepts and random slopes for subject (Barr, Levy, Scheepers & Tily, 2013). Post-hoc tests were conducted with the EMMEANS package in R.
+
+
+
+
+# Results
+
+
+Production and perception results are presented in turn. For each of these two parts /e/, /i/ and /u/ are presented one after the other, with models with F1 and F2 as dependent variables. Finally, results in production and perception are presented for the Auditory group on the fourth day.
+
+
+
+
+
+
+```{r prod_data, include=FALSE}
+# Load and treat data
+
+
+database = as.data.frame(read.csv("Newsounds_L1_production.csv",header=T,sep=";",dec=","))
+
+# Only keep the experimental trials and the first 2 time points
+data = filter(database, Time == "T0" | Time == "T1") 
+
+# Just make sure that all the numerical variables are understood as numbers
+data$F1 = as.numeric(data$F1)
+data$F2 = as.numeric(data$F2)
+data$F3 = as.numeric(data$F3)
+data$Alondra = as.numeric(data$Alondra)
+data$Inhibition = as.numeric(data$Inhibition)
+data$Precision_E = as.numeric(data$Precision_E)
+data$Precision_y = as.numeric(data$Precision_y)
+data$Distance = as.numeric(data$Distance)
+
+# Center and scale Alondra, Inhibition and Precision
+data$Alondra <- scale(data$Alondra, center = TRUE, scale = TRUE)
+data$Inhibition <- scale(data$Inhibition, center = TRUE, scale = TRUE)
+data$Precision_E <- scale(data$Precision_E, center = TRUE, scale = TRUE)
+data$Precision_y <- scale(data$Precision_y, center = TRUE, scale = TRUE)
+```
+
+
+
+```{r prod_prep, include=FALSE}
+# Make factors, create contrasts and create separate dataframes for each vowel
+
+data <- data %>% convert_as_factor(Participant, Group, Time)
+
+
+#Time contrast: Code T0 as -0.5, and T1 as 0.5
+data$Time_contrast <- 0
+data$Time_contrast <- ifelse(data$Time == "T0", -0.5, 0.5)
+
+
+e_data <- data[data$Sound == 'e',] 
+u_data <- data[data$Sound == 'u',] 
+
+```
+
+
+
+
+## Production
+
+The following analyses aimed at examining the effects of training on the production of the non-native (i.e.,trained) vowels. Recordings from the pre-and post-training tests were verified for intensity and absence of noise (e.g.,coughs,sneezes,sighs,etc.).
+A small percentage (0.77%) of recordings was discarded on this basis. For each recorded token, a stable period in the center of the vowel was identified with Praat and formant values were manually recorded. For each vowel, two models were fitted, on for F1 and one for F2, in order to be able to precisely determine how native vowels were affected by training.
+
+The formant values were fitted with R (R Core Team, 2012) to a general linear mixed-effects model, using the Lme4 package (reference here). The effects of Time (before or T0 vs. after training or T1) and Group (Auditory vs. Conflicting vs. Novel) were included as fixed factors (with “T0” and “Auditory” as the reference levels for Time and Group, respectively).The ‘maximal’ random structure with correlation parameters between the fixed factors and random slopes was used, it included a by-subject random slope adjusted for Time (Baayen, 2008; Baayen, Davidson,&Bates,2008; Barr,Levy,Scheepers,&Tily,2013; Winter,2013). This structure most effectively generalizes the results (Barr etal.,2013).
+  
+Inspired by the methodology of Kartushina, Hervais-Adelman, Frauenfelder and Golestani (2016), We examined the following measures: the position and the compactness of the native vowels with regard to those of the corresponding non-native target vowel, as produced by native speakers. For the analyses of DS, the effects of Time (before vs. after training, with ‘before’ as the reference level, Group (Auditory vs. Conflicting vs. Novel) were included as fixed factors (with “T0” and “Auditory” as the reference levels for Time and Group, respectively). The position of the native vowel was calculated through a Distance Score (DS), described in the methods section of the paper. 
+
+First results for distance score for the two native vowels /e/ and /u/ are  reported, then results for compactness. 
+
+The models included a by-Subjects random intercept and a by-subject random slope adjusted for Time (???).
+
+For /e/, the model yielded a main effect of Time (β=13.35, SE=2.19, t=3.05, p<0.01), indicating that production of the native vowel /e/ was closer to French vowel /ɛ/ in the vowel space after compared to before training. No other effect was significant.
+
+
+
+```{r}
+model_e_distance <-lmer(Distance ~ Time_contrast * Group + (Time_contrast |Participant), data = e_data)
+tab_model(model_e_distance, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+![/e/ production across groups](Plots/e_Production.png)
+
+
+In order to better understand the effect of training with /ɛ/ on the production of /e/, two additional models were built analyzing the movement of /e/ independently in the F1 and in the F2 dimensions. For F1, the model yielded a main effect of Time (β=26.88, SE=8.49, t=3.17, p<0.01), indicating that in the F1 dimension /e/ moved toward a more open position, that is in the direction of /ɛ/. None of the Group*Time interactions were significant, indicating that this shift toward a more open position happened across groups.
+
+
+
+
+```{r prod_e_F1_mod, ECHO = FALSE}
+model_e_F1 <-lmer(F1 ~ Time_contrast * Group + (Time_contrast |Participant), data = e_data)
+tab_model(model_e_F1, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+
+For F2, the model also yielded a main effect of Time (β=-51.94, SE=25.42, t=-2.04, p=0.045), indicating that in the F2 dimension /e/ moved toward a more backward position, that is once again in the direction of /ɛ/. Once again, no Group*Time interaction was significant.
+
+
+```{r prod_e_F2_mod, ECHO = FALSE}
+model_e_F2 <-lmer(F2 ~ Time_contrast * Group + (Time_contrast |Participant), data = e_data)
+tab_model(model_e_F2, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+
+
+
+For /u/, the model did not yield any main effects, indicating that /u/ did not significantly move either closer or further away from French vowel /y/ after training. This result was consistent across groups, as none of the Time*Group interactions were significant.
+
+
+
+```{r}
+model_u_distance <-lmer(Distance ~ Time_contrast * Group + (Time_contrast |Participant), data = u_data)
+tab_model(model_u_distance, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+
+
+![/u/ production across groups](Plots/u_Production.png)
+
+Despite the absence of any effects in the DS model, we considered F& and F2 separately. the F1 model yielded a significant Time*Group interaction in the contrast comparing the Novel group with the Auditory group, indicating that the sound /u/ was not affected in the same way by training for the Novel Group and the Auditory group (β=-19.54, SE=5.86, t=-3.34, p<0.01).
+
+
+
+```{r prod_u_F1_mod, ECHO = FALSE}
+model_u_F1 <-lmer(F1 ~ Time_contrast * Group + (Time_contrast |Participant), data = u_data)
+tab_model(model_u_F1, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+
+Tukey post-hoc analyses using the R package EMMEANS (SOME QUOTE HERE) for each level of the factor Group show that for both the Conflicting (β=-12.63, SE=4.14, t=-3.05, p=0.003) and the Auditory group (β=-14.99, SE=4.14, t=-3.62, p<0.001) /u/ moved toward a more closed production, *away* from new vowel /y/. For the Novel group, there was no significant movement in either direction (β=4.56, SE=4.14, t=1.10, p=0.27)
+
+
+
+```{r}
+test_1 <- emmeans(model_u_F1, specs = pairwise ~ Time_contrast | Group, pbkrtest.limit = 4000)
+summary(test_1)
+```
+
+
+
+```{r}
+emmip(model_u_F1, ~ Time_contrast | Group, pbkrtest.limit = 4000)
+```
+
+
+In F2, the model yielded no significant main effects or interactions. It is interesting to note however, that the (non-significant) main effect of Time shows that numerically F2 values are slightly higher after training than before. Higher F2 values signal a more frontal position, and new sound /y/ has a much more frontal position than Spanish /u/. The fact that /u/ is slighlty (and non-significantly) closer to /y/ in the F2 dimension after training could help explain why the distance model did not yield any effect despite the significant movement in the F1 direction.
+
+
+```{r prod_u_F2_mod, ECHO = FALSE}
+model_u_F2 <-lmer(F2 ~ Time_contrast * Group + (Time_contrast |Participant), data = u_data)
+tab_model(model_u_F2, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+
+
+
+## Compactness
+
+```{r comp_data, include = FALSE}
+# Load data
+
+
+database_comp = as.data.frame(read.csv("Newsounds_L1_compactness.csv",header=T,sep=";",dec=","))
+
+# Only keep the experimental trials and the first 2 time points
+data_comp = filter(database_comp, Time == "T0" | Time == "T1") 
+
+# Just make sure that all the numerical variables are understood as numbers
+data_comp$Precision_L2 = as.numeric(data_comp$Precision_L2)
+data_comp$Compactness = as.numeric(data_comp$Compactness)
+
+# Center and L2 Precision 
+data_comp$Precision_L2 <- scale(data_comp$Precision_L2, center = TRUE, scale = TRUE)
+
+```
+
+
+```{r comp_prep, include = FALSE}
+# Make factors, create contrasts and create separate dataframes for each vowel
+
+data_comp <- data_comp %>% convert_as_factor(Participant, Group, Time)
+
+
+#Time contrast: Code T0 as -0.5, and T1 as 0.5
+data_comp$Time_contrast <- 0
+data_comp$Time_contrast <- ifelse(data_comp$Time == "T0", -0.5, 0.5)
+
+
+# Leaving the default dummy coding for the group contrast
+
+
+e_data_comp <- data_comp[data_comp$Sound == 'e',] 
+u_data_comp <- data_comp[data_comp$Sound == 'u',] 
+
+```
+
+
+
+```{r see_comp_data, include = FALSE}
+# Not including this in the final document, this is just a way to visualize the dataframe
+tab_df(head(u_data_comp))
+```
+
+
+To analyse how training impacted the compactness of native sounds, ANOVAs were fitted with compactness score as the dependent variable. In order to determine whether individual performance in the L2 influences the impact on training on the L1, the distance score representing the precision of the participant's L2 production of the L2 sound associated with a given L1 sound was included in the model as a predictive factor. Models included Time, Group and L2_Precision as fixed effects, with Time and Group as categorical factor and L2_Precision as a continuous factor, and Time as a within effect for participants. 
+
+For /e/, the model did not yield any main effect or interaction, indicating that training had no effect on the compactness of native sounds, regardless of the orthography assciated with the new sounds, and regardless of the precision with which participants have learned the new sounds.
+
+
+/e/:
+
+```{r comp_e_mod, results='asis', echo=FALSE, cache=FALSE}
+model_e_compac <-aov(Compactness ~ Group*Time_contrast*Precision_L2 + Error(Participant/Time_contrast), data = e_data_comp)
+sum_e = summary(model_e_compac)
+print(lapply(sum_e, xtable), type='html', comment=FALSE)
+
+# Help with table: https://stackoverflow.com/questions/6080770/latex-table-through-xtable
+
+
+# kable(summary(model_e_compac))
+#tab_model(model_e_compac, show.se=TRUE, show.stat=TRUE)
+```
+
+
+```{r}
+model_u_compac <-aov(Compactness ~ Group*Time_contrast*Precision_L2 + Error(Participant/Time_contrast), data = u_data_comp)
+sum_u = summary(model_u_compac)
+print(lapply(sum_u, xtable), type='html', comment=FALSE)
+
+# Help with table: https://stackoverflow.com/questions/6080770/latex-table-through-xtable
+
+
+# kable(summary(model_e_compac))
+#tab_model(model_e_compac, show.se=TRUE, show.stat=TRUE)
+```
+
+
+
+```{r}
+emmip(model_u_compac, Precision_L2 ~ Time_contrast | Group, at = list(Precision_L2 = c(-0.5, 0, 1)))
+```
+
+For /u/, the model yielded a Group:Time:L2_Precision interaction (F(2, 69)=6.09, p=0.004), indicating that the interaction between Group and L2_Precision has an influence on how training impacted the compactness of /u/.
+
+
+/u/:
+
+
+```{r comp_u_mod, results='asis', echo=FALSE, cache=FALSE}
+model_u_compac <-aov(Compactness ~ Group*Time_contrast*Precision_L2 + Error(Participant/Time_contrast), data = u_data_comp)
+sum_u = summary(model_u_compac)
+
+print(lapply(sum_u, xtable), type='html', comment=FALSE)
+
+# Help with table: https://stackoverflow.com/questions/6080770/latex-table-through-xtable
+
+
+# kable(summary(model_e_compac))
+#tab_model(model_u_compac, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+Plotting an interaction plot with EMMEANS, we can see that training led to a less compact native /u/, but only in the Conflicting group and only for participants demonstrating poor precision in L2 learning. In he other two groups, training was not associated with a loss of compactness, regardless of the precision of L2 productions.
+
+
+```{r comp_int_plot, ECHO = FALSE}
+emmip(model_u_compac, Precision_L2 ~ Time_contrast | Group, at = list(Precision_L2 = c(-0.5, 0, 1)))
+```
+
+This triple interaction can be further explored with models showing the effect of Time for each group for different fixed levels of L2_precision. In models 1 and 2, when L2 precision is either better than average (model 1) or average (model 2), there is no significant effect of Time for any of the groups. But in model 3, when precision is fixed at one standard deviation above the average, a strong effect of Time appears, but only for the Conflicting group, indicating that /u/ became much less compact after training for individuals in that group that were not able to produce new sound /y/ precisely.
+
+
+```{r comp_emm_test_1, ECHO = FALSE}
+test_1 <- emmeans(model_u_compac, specs = pairwise ~ Time_contrast | Group, at = list(Precision_L2 = -0.5))
+summary(test_1)
+```
+
+
+```{r comp_emm_test_2, ECHO = FALSE}
+test_2 <- emmeans(model_u_compac, specs = pairwise ~ Time_contrast | Group, at = list(Precision_L2 = 0))
+summary(test_2)
+```
+
+
+```{r comp_emm_test_3, ECHO = FALSE}
+test_3 <- emmeans(model_u_compac, specs = pairwise ~ Time_contrast | Group, at = list(Precision_L2 = 1))
+summary(test_3)
+```
+
+
+
+### Discussion production
+
+
+
+Our result have confirmed that very short-term training with a new sound of only a few hours can lead reliably to an impact on the way native sounds are produced. Moreover, our results show that the orthography with which these new sounds are learned can have a direct impact on the position and compactness of native sounds in the vowel space. Interestingly however, this impact is very much dependent on the position of both native and new sounds in the vowel space. In line with Flege's theoretical claims (1995), it seems that native and new sounds are hardest to maintain separate when the two sounds are very close to each other in vowel space. In our study, new sound /ɛ/ was so close to native sound /e/ in the vowel space that it is considered an allophonic version of /e/ in certain contexts (REFERENCE), and in this case the native sound was reliably attracted to the new sound both in the F1 and F2 dimension, regardless of the orthography the sound was learned with. However, for a new sound situated much further away in the vowel space to the sound it was associated with, differences started to appear both between the F1 and F2 dimension and across groups. Even though /u/ and /y/ mostly differ in the F2 dimension, and even though we expected native sound /u/ to be impacted mostly in the F2 dimension, the only significant effect found was in the F1 dimension, with /u/ *repelled* away from /y/ in both the Auditory and the Conflicting groups. No significant effect was found in the F2 direction, and if anything the movement in the F2 direction was in the opposite direction *toward* /y/. Differences across groups also appeared for /u/, in a way that was partly consistent with our hypotheses. As expected, learning the new sound /y/ with a novel orthography helped protect the native sound /u/ from being impacted by the new sound, but contrary to our expectations for the other two groups the sound /u/ was actually repelled from /y/, instead of moving toward it. In compactness, vowel and group differences appeared once again. We found that despite consistently moving toward /ɛ/ for all groups, the compactness of /e/ was never impacted by learning the new sound /ɛ/. However, we found that the /u/ became less compact, but only for the conflicting group who learned to assosiate new sound /y/ with the letter <u>, and only for ***the least gifted L2 learners****.
+
+
+## Perception
+
+```{r perc_data, include = FALSE}
+# Load data
+
+database_perc = as.data.frame(read.csv("Newsounds_L1_perception.csv",header=T,sep=";",dec=","))
+
+# Only keep the experimental trials and the first 2 time points
+data_perc = filter(database_perc, Time == "T0" | Time == "T1") 
+
+# Just make sure that all the numerical variables are understood as numbers
+data_perc$F1 = as.numeric(data_perc$F1)
+data_perc$F2 = as.numeric(data_perc$F2)
+data_perc$Alondra = as.numeric(data_perc$Alondra)
+data_perc$Inhibition = as.numeric(data_perc$Inhibition)
+data_perc$Distance_E = as.numeric(data_perc$Distance_E)
+data_perc$Distance_y = as.numeric(data_perc$Distance_y)
+
+
+# Center and scale Alondra, Inhibition and Precision
+data_perc$Alondra <- scale(data_perc$Alondra, center = TRUE, scale = TRUE)
+data_perc$Inhibition <- scale(data_perc$Inhibition, center = TRUE, scale = TRUE)
+
+str(data_perc)
+```
+
+
+```{r perc_prep, include = FALSE}
+# Make factors, set contrasts, separate data by sound
+
+data_perc <- data_perc %>% convert_as_factor(Participant, Group, Time)
+data_perc$Time <- relevel(data_perc$Time, 'T0')
+
+levels(data_perc$Group)
+
+#Time contrast: Code T0 as -0.5, and T1 as 0.5
+data_perc$Time_contrast <- 0
+data_perc$Time_contrast <- ifelse(data_perc$Time == "T0", -0.5, 0.5)
+
+
+# Leaving the default dummy coding for the group contrast
+
+a_data_perc <- data_perc[data_perc$Sound == 'a',]
+e_data_perc <- data_perc[data_perc$Sound == 'e',] 
+u_data_perc <- data_perc[data_perc$Sound == 'u',] 
+i_data_perc <- data_perc[data_perc$Sound == 'i',] 
+o_data_perc <- data_perc[data_perc$Sound == 'o',]
+Ninguna_data_perc <- data_perc[data_perc$Sound == 'Ninguna de las opciones',]
+
+```
+
+
+In perception, we fitted a similar models as in production for the sounds /e/ and /u/, to analyze whether the position of the two sounds had moved after training with the new sounds /ɛ/ and /y/. the effects of Time (before vs. after training, with ‘before’ as the reference level, Group (Auditory vs. Conflicting vs. Novel) were included as fixed factors (with “T0” and “Auditory” as the reference levels for Time and Group, respectively). The position of the native vowel was calculated through a Distance Score (DS), described in the methods section of the paper. 
+
+The models included a by-Subjects random intercept and a by-subject random slope adjusted for Time (???).
+
+For /e/, the model did not yield any significant effect or interaction, indicating that participants were not more or less willing to accept tokens close to the new sound /ɛ/ as good representent of /e/ after training with /ɛ/ than before. 
+
+
+
+```{r}
+model_e_distance_perc <-lmer(Distance_E ~ Time_contrast * Group + (Time_contrast |Participant), data = e_data_perc)
+tab_model(model_e_distance_perc, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+
+When fitting a separate models for change in the F1 direction, the model also does not yield any significant effect or interaction, 
+
+
+
+```{r perc_e_F1_mod, ECHO = FALSE}
+model_e_F1 <-lmer(F1 ~ Time_contrast * Group + (Time_contrast |Participant), data = e_data_perc)
+tab_model(model_e_F1, show.se=TRUE, show.stat=TRUE)
+```
+
+An interaction plot demonstrate the direction of the difference between the Conflicting group and the other two groups, with participants in the Novel and Auditory group appearing to toward accepting less open tokens as good representants of /e/ (accepting tokens further away from /ɛ/), whereas the conflicting group seems to accept tokens slightly closer to /ɛ/ as good examples of /e/ after training. The largest difference appears to be between the novel and the conflicting group, as predicted in out hypotheses.
+
+
+
+```{r  perc_e_F1_int, ECHO = FALSE}
+emmip(model_e_F1, Group ~ Time_contrast)
+```
+
+When using EMMEANS to examine all the pairwise interactions between Group and Time, neither the interaction comparing the Conflicting and the Auditory group or the interaction comparing the Conflicting and the Novel group are significant. The absolute movement is therefore in the direction that we predicted, but due to the absence of a significant result it is not possible to make definitive judgments.
+
+
+
+```{r  perc_e_F1_emm, ECHO = FALSE}
+e_F1_emm_tg <- emmeans(model_e_F1, pairwise ~ Time_contrast | Group, adjust="tukey")
+contrast(e_F1_emm_tg[[1]], interaction = c("pairwise", "pairwise"), by = NULL)
+```
+
+
+In F2, the model does not yield any significant effect of interaction.
+
+
+```{r  perc_e_F2_mod, ECHO = FALSE}
+model_e_F2 <-lmer(F2 ~ Time_contrast * Group + (Time_contrast |Participant), data = e_data_perc)
+tab_model(model_e_F2, show.se=TRUE, show.stat=TRUE)
+```
+
+
+For /u/, the distance model yields a significant Group * Time interaction, specifically for the comparison between the Conflicting and the Auditory group (β=-40.94, SE=12.63, t=-3.24, p<0.01), indicating that the effect of time was different for the Conflicting and the Auditory group. The Group * Time interaction in the comparison between the Novel and the Auditory group did not quite reach significance (β=-24.66, SE=12.60, t=-1.96, p>0.05).
+
+
+
+ Distance
+ 
+```{r}
+model_u_distance_perc <-lmer(Distance_y ~ Time_contrast * Group + (Time_contrast |Participant), data = u_data_perc)
+tab_model(model_u_distance_perc, show.se=TRUE, show.stat=TRUE, df.method = "satterthwaite")
+```
+
+
+An interaction plot allows us to see that both the Auditory and Novel group tended to accept tokens further away from /y/ as good examples of /u/ after training, while the Conflicting group tended to accept ltokens closer to /y/ as good examples of /u/ after training. 
+
+
+```{r}
+emmip(model_u_distance_perc, Group ~ Time_contrast)
+```
+
+
+When fitting a model specifically in the F1 dimension, none of the main effects or interactions are significant, indicating that there is no difference in the position of tokens accepted by participants as good examples of /u/ along the F1 dimension before and after training with /y/.
+
+
+```{r  perc_u_F1_mod, ECHO = FALSE}
+model_u_F1_perc <-lmer(F1 ~ Time_contrast * Group + (Time_contrast |Participant), data = u_data_perc)
+tab_model(model_u_F1_perc, show.se=TRUE, show.stat=TRUE)
+```
+ 
+ 
+In the F2 dimension, the model yields a significant Group * Time interaction for the contrast comparing the Conflicting with the Auditory group (β=88.07, SE=26.02, t=3.38, p<0.01), indicating that the Conflicting group moved toward accepting tokens in a more frontal position position (closer to /y/ in vowel space) after articulatory training with /y/, while the other two groups either did not move or moved away from /y/.
+ 
+
+```{r  perc_u_F2_mod, ECHO = FALSE}
+model_u_F2_perc <-lmer(F2 ~ Time_contrast * Group + (Time_contrast |Participant), data = u_data_perc)
+tab_model(model_u_F2_perc, show.se=TRUE, show.stat=TRUE)
+```
+
+
+### Discussion Perception
+
+
+Our results show that in perception, like in production, both the position of native vowels and newly trained vowels in the vowel space have an impact on the influence that newly trained vowels have on native sounds. Just as in production, there was no significant difference between groups in the effect of training on the perception of native sounds for /e/. Contrary to production however, the main effect of Time was not significant, meaning that there was no general impact from training new sounds on the perception of /e/. Interestingly, both the Auditory and Novel groups moved slightly away from /ɛ/ in absolute terms while the Conflicting group became slighlty closer numericaly, even though these movements were not statistically significant. 
+
+For /u/, where the native and the new sounds are situated slightly further away from each other, group differences appeared, just as in production. The conflicting group was more willing to accept as examples of /u/ tokens closer to /y/ in the L2 dimension, while both the Novel group and the Auditory group went in the opposite direction. In the L1 dimension, in opposition to what happened in production, there was no movement for any of the groups. Finally, even though the Time * Group interaction between the Novel and Auditory group was not quite significant, it is interesting to note that the absolute movement away from /y/ was stronger for the Auditory group than for the Novel group, which is what was expected before the experiment. 
+
+
+# Discussion
+
+In the present experiment, 75 Spanish native speakers naïve in French were trained over three days in the span of a week, listening and producing the new sounds /ɛ/ and /y/ from French over the course of 600 trials of an articulatory training task. French /ɛ/ is similar to Spanish /e/, and is even an allophone of /e/ in certain environments (REFERENCE). French /y/ on the other hand is associated with /y/ for Spanish learners of French as a foreign language, but the sounds are very far apart in vowel space (REFERENCE). The training task consisted of hearing three examples of the target sounds, selected at random among a variety of speakers and tokens, before reproducing the sound once. Participants did not receive any kind of feedback on their productions of the target sound.
+
+Participant were separated into three groups: an Auditory group that learned the new sounds without any orthographic support; a Conflicting group that learned the new sounds /ɛ/ and /y/ associated with the letters <e> and <u> respectively, that in Spanish are associated with the sounds /e/ and /u/; and a Novel group that learned the new sounds /ɛ/ and /y/ with the graphemes <ʚ> and <ф> respectively, a pair of graphemes that do not exist in the Spanish alphabet and are not associated with any particular sound or meaning for Spanish native speakers. 
+
+The impact of training these new sounds on the production and perception of native sounds was assessed using Mahalanobis distance (distance score, DS) in L1/L2 space between each token in the production and perception of native sounds relative to the position of the target tokens that they had to learn. In production, we also measured the compactness of the productions of /e/ and /u/ before and after training.
+
+ 
+## Production
+
+
+### Position
+
+Impact of training French /ɛ/ on Spanish /e/
+
+Short-term articulatory training with new foreign sounds was able to rapidly impact the production of both native sounds, /e/ and /u/, there were however differences in the impact of training and orthography on these two sounds. In contrast with the results obtained by Kartushina et al. (2016), native sound /e/ was reliably attracted by new sound /ɛ/ across all groups and in both the F1 and the F2 dimension. In their article, Kartushina et al. (2016) posited that the absence of attraction of the Danish vowel /ɔ/ on French /o/ after articulatory training was due to the fact that /ɔ/ and /o/ are partially overlapping, and that this left very limited space for attraction to occur. However, Spanish /e/ and French /ɛ/ are in a similar situation, but we found an extremely reliable attraction of /e/ toward /ɛ/. It is possible that the feedback provided to the participants in Kartushina et al. (2016) helped them build a robust phonetic category for Danish vowel /ɔ/, allowing participants to differentiate the sound from French /o/.
+
+
+Impact of training French /y/ on Spanish /u/
+
+Native sound /u/ was also impacted by training /y/, but the impact was much less straightforward than for /e/. The sound /u/ only moved in the F1 direction, and only for the Conflicting and Auditory groups. Moreover, /u/ moved toward a *less* frontal realization after training, away from /y/ in the F2 dimension. The fact that here was any movement at all for two sounds that are so far away from each other goes against the findings from Kartushina et al. (2016), where the sounds furthest away from Russian sound /ɨ/ that was trained during the experiment did not show a significant change before and after training. Our results however do support the idea that the furthest away a native sound is from a newly learned foreign sound, the least clear and direct the impact of that foreign sound is on the native sound. 
+
+
+### Compactness
+
+There was no effect of Time on compactness for /e/, in line with the effects for compactness observed by Kartushina et al. (2016). For /u/ however, an interaction was present for the Conflicting group, whereas /u/ became less compact after training with /y/, but only for the participants that were the least adept at acquiring the new sound. Earlier studies have found that individual characteristics in the L1 have an impact on how well L2 sounds are aquired (Kartushina and Frauenfelder, 2014), and these results show that the reverse also hold true: individual characteristics in the way the L2 is aquired also modulate the impact of the new L2 sounds on the L1. 
+
+This result is in line with the main position of both the SLM (Flege 1995, Bohn and Flege, 2021) and the PAM (Best, 1995, Best & Taylor, 2007), namely that cross-linguistic transfers are bi-directional, and that any change in one language of a bilingual should be accompanied by a consequent change in the other language.  
+
+What is interesting about this result, is that the link between precision in the L2 and compactness in the L1 is limited to the Conflicting group. This means that the assimilation between L1 and L2 sounds was reinforced by a non-acoustic characteristic of the two sounds, in this case orthography, leading to a more dependent relation between the two sounds than for groups that did not learn the new sounds with a new orthography. This is a finding that has been made already for the L2 (Cutler et al, 2014), but to our knowledge the present experiment is the first to make the same link in the reverse direction.
+
+
+## Perception
+
+??????
+
+
+
+
